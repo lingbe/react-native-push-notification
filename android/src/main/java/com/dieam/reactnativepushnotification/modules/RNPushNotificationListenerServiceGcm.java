@@ -3,6 +3,8 @@ package com.dieam.reactnativepushnotification.modules;
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningAppProcessInfo;
 import android.app.Application;
+import android.app.NotificationManager;
+import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -110,12 +112,21 @@ public class RNPushNotificationListenerServiceGcm extends GcmListenerService {
             jsDelivery.notifyRemoteFetch(bundle);
         }
 
+        // TIP: You can see this logs in logcat
         Log.v(LOG_TAG, "sendNotification: " + bundle);
+        // Log.v(LOG_TAG, "sendNotification budnle name: " + getApplication().getPackageName());
+        // Log.v(LOG_TAG, "sendNotification id: " + bundle.getString("id"));
 
         if (!isForeground) {
             Application applicationContext = (Application) context.getApplicationContext();
             RNPushNotificationHelper pushNotificationHelper = new RNPushNotificationHelper(applicationContext);
             pushNotificationHelper.sendToNotificationCentre(bundle);
+        }
+        
+        // Cancel noti or others notis with the same "id" passed in "cancel" field
+        if (bundle.containsKey("cancel")) {
+            NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            notificationManager.cancel(Integer.parseInt(bundle.getString("cancel")));
         }
     }
 
