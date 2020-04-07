@@ -27,10 +27,12 @@ import com.facebook.react.bridge.ReadableMap;
 import org.json.JSONArray;
 import org.json.JSONException;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.HashMap;
 
 import static com.dieam.reactnativepushnotification.modules.RNPushNotification.LOG_TAG;
 import static com.dieam.reactnativepushnotification.modules.RNPushNotificationAttributes.fromJson;
@@ -39,6 +41,7 @@ public class RNPushNotificationHelper {
     public static final String PREFERENCES_KEY = "rn_push_notification";
     private static final long DEFAULT_VIBRATION = 300L;
     private static final String NOTIFICATION_CHANNEL_ID = "rn-push-notification-channel-id";
+    private static HashMap<Integer, ArrayList<String>> messageMap = new HashMap<Integer, ArrayList<String>>();
 
     private Context context;
     private RNPushNotificationConfig config;
@@ -63,6 +66,24 @@ public class RNPushNotificationHelper {
             e.printStackTrace();
             return null;
         }
+    }
+
+    public void setNotificationHistory(int notId, String message) {
+        ArrayList<String> messageList = messageMap.get(notId);
+        if (messageList == null) {
+            messageList = new ArrayList<String>();
+            messageMap.put(notId, messageList);
+        }
+
+        if (message.isEmpty()) {
+            messageList.clear();
+        } else {
+            messageList.add(message);
+        }
+    }
+
+    public void clearNotificationHistory() {
+        messageMap.clear();
     }
 
     private AlarmManager getAlarmManager() {
@@ -275,10 +296,40 @@ public class RNPushNotificationHelper {
 
             notification.setStyle(new NotificationCompat.BigTextStyle().bigText(bigText));
 
+            // TIPS: Section of "ibox style notification"
+            // - Notificaiton inbox are grouped by id so this way is posible to have multiple inbox
+            // - If app is foreground nothing to do here there are inside "sendToNotificationCentre"
+            if(bundle.getString("style").equals("inbox")){
+                int notId = Integer.parseInt(bundle.getString("id"));
+                setNotificationHistory(notId, bundle.getString("message"));
+                ArrayList<String> messageList = messageMap.get(notId);
+                Integer sizeList = messageList.size();
+
+                if (sizeList > 1) {
+                    String sizeListMessage = sizeList.toString();
+                    String stacking = sizeList + " more";
+                    if (bundle.getString("summaryText") != null) {
+                        stacking = bundle.getString("summaryText");
+                        stacking = stacking.replace("%n%", sizeListMessage);
+                    }
+                    NotificationCompat.InboxStyle notificationInbox = new NotificationCompat.InboxStyle()
+                        .setBigContentTitle(bundle.getString("title")).setSummaryText(stacking);
+
+                    for (int i = messageList.size() - 1; i >= 0; i--) {
+                        notificationInbox.addLine(messageList.get(i));
+                    }
+
+                    notification.setStyle(notificationInbox);
+                }
+                NotificationManager notificationManager = notificationManager();
+                notificationManager.cancel(notId);
+            }
+
             Intent intent = new Intent(context, intentClass);
             intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
             bundle.putBoolean("userInteraction", true);
             intent.putExtra("notification", bundle);
+            // clearNotificationHistory(); // TODO test it: only clear on userInteraction but this is clearing always
 
             if (!bundle.containsKey("playSound") || bundle.getBoolean("playSound")) {
                 Uri soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);

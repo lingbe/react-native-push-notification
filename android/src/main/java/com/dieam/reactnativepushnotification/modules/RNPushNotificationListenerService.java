@@ -131,14 +131,16 @@ public class RNPushNotificationListenerService extends FirebaseMessagingService 
         }
 
         // TIP: You can see this logs in logcat
-        Log.v(LOG_TAG, "sendNotification: " + bundle);
+        Log.v(LOG_TAG, "handleRemotePushNotification: " + bundle);
         // Log.v(LOG_TAG, "sendNotification budnle name: " + getApplication().getPackageName());
         // Log.v(LOG_TAG, "sendNotification id: " + bundle.getString("id"));
 
+        Application applicationContext = (Application) context.getApplicationContext();
+        RNPushNotificationHelper pushNotificationHelper = new RNPushNotificationHelper(applicationContext);
         if (!isForeground) {
-            Application applicationContext = (Application) context.getApplicationContext();
-            RNPushNotificationHelper pushNotificationHelper = new RNPushNotificationHelper(applicationContext);
             pushNotificationHelper.sendToNotificationCentre(bundle);
+        }else{
+            pushNotificationHelper.clearNotificationHistory(); // Clear history of all inbox type notifications 
         }
         
         // Cancel noti or others notis with the same "id" passed in "cancel" field
@@ -146,7 +148,6 @@ public class RNPushNotificationListenerService extends FirebaseMessagingService 
             NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             notificationManager.cancel(Integer.parseInt(bundle.getString("cancel")));
         }
-
     }
 
     private boolean isApplicationInForeground() {
