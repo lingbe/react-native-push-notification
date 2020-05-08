@@ -34,6 +34,7 @@ public class RNPushNotificationListenerServiceGcm extends GcmListenerService {
             bundle.putString("message", bundle.getString("twi_body"));
         }
 
+        // TIP: it seems that "data" always is null (in our case with GCM) so nothing to do here
         if (data != null) {
             if (!bundle.containsKey("message")) {
                 bundle.putString("message", data.optString("alert", null));

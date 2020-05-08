@@ -34,6 +34,7 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 
+import com.dieam.reactnativepushnotification.helpers.ApplicationBadgeHelper;
 import static com.dieam.reactnativepushnotification.modules.RNPushNotification.LOG_TAG;
 import static com.dieam.reactnativepushnotification.modules.RNPushNotificationAttributes.fromJson;
 
@@ -42,6 +43,7 @@ public class RNPushNotificationHelper {
     private static final long DEFAULT_VIBRATION = 300L;
     private static final String NOTIFICATION_CHANNEL_ID = "rn-push-notification-channel-id";
     private static HashMap<Integer, ArrayList<String>> messageMap = new HashMap<Integer, ArrayList<String>>();
+    private static int messageCountAll = 0;
 
     private Context context;
     private RNPushNotificationConfig config;
@@ -84,6 +86,8 @@ public class RNPushNotificationHelper {
 
     public void clearNotificationHistory() {
         messageMap.clear();
+        messageCountAll = 0;
+        ApplicationBadgeHelper.INSTANCE.setApplicationIconBadgeNumber(context, messageCountAll);
     }
 
     private AlarmManager getAlarmManager() {
@@ -453,6 +457,16 @@ public class RNPushNotificationHelper {
             // at the exact time. During testing, it was found that notifications could
             // late by many minutes.
             this.scheduleNextNotificationIfRepeating(bundle);
+
+            // TIPS: Section of "Increment Badge"
+            if(bundle.containsKey("incrementBadge") && bundle.getString("incrementBadge").equals("true")){
+                messageCountAll ++;
+                ApplicationBadgeHelper.INSTANCE.setApplicationIconBadgeNumber(context, messageCountAll);
+            }else if(bundle.containsKey("badge")){
+                ApplicationBadgeHelper.INSTANCE.setApplicationIconBadgeNumber(context, Integer.parseInt(bundle.getString("badge")));
+                messageCountAll = Integer.parseInt(bundle.getString("badge"));
+            }
+
         } catch (Exception e) {
             Log.e(LOG_TAG, "failed to send push notification", e);
         }

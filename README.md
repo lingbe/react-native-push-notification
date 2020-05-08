@@ -25,8 +25,9 @@ Many features inspired in complete and well documented (cordova /
 phonegap) plugin: [phonegap-plugin-push](https://github.com/phonegap/phonegap-plugin-push/blob/master/docs/PAYLOAD.md)
 
 - Do not show notification banner if app is in foreground
-- Cancel notifications with the same "id" passed in "cancel" field (cordova plugin docs)
-- Inbox type notifications (cordova plugin docs)
+- Cancel notifications with the same "id" passed in "cancel" field
+- Inbox type notifications [cordova plugin docs](https://github.com/phonegap/phonegap-plugin-push/blob/master/docs/PAYLOAD.md#inbox-stacking)
+- Autoincrement badge number on notifications with field "incrementBadge" when app are in backgroud or closed (badge management was already supported)
 
 ## Installation
 
