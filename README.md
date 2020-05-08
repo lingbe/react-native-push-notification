@@ -19,6 +19,15 @@ React Native Local and Remote Notifications for iOS and Android
 
 Changelog is available from version 3.1.3 here: [Changelog](https://github.com/zo0r/react-native-push-notification/blob/master/CHANGELOG.md)
 
+## Fork changelog
+
+Many features inspired in complete and well documented (cordova / 
+phonegap) plugin: [phonegap-plugin-push](https://github.com/phonegap/phonegap-plugin-push/blob/master/docs/PAYLOAD.md)
+
+- Do not show notification banner if app is in foreground
+- Cancel notifications with the same "id" passed in "cancel" field (cordova plugin docs)
+- Inbox type notifications (cordova plugin docs)
+
 ## Installation
 
 `npm install --save react-native-push-notification` or `yarn add react-native-push-notification`

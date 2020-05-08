@@ -299,7 +299,7 @@ public class RNPushNotificationHelper {
             // TIPS: Section of "ibox style notification"
             // - Notificaiton inbox are grouped by id so this way is posible to have multiple inbox
             // - If app is foreground nothing to do here there are inside "sendToNotificationCentre"
-            if(bundle.getString("style").equals("inbox")){
+            if(bundle.containsKey("style") && bundle.getString("style").equals("inbox")){
                 int notId = Integer.parseInt(bundle.getString("id"));
                 setNotificationHistory(notId, bundle.getString("message"));
                 ArrayList<String> messageList = messageMap.get(notId);
@@ -329,7 +329,8 @@ public class RNPushNotificationHelper {
             intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
             bundle.putBoolean("userInteraction", true);
             intent.putExtra("notification", bundle);
-            // clearNotificationHistory(); // TODO test it: only clear on userInteraction but this is clearing always
+            // TIP: all notifications that go to "notificationCentre" pass through here but when user in
+            // so clearNotificationHistory should go on "userInteraction" set to false but seems to be better handle on open app in js side
 
             if (!bundle.containsKey("playSound") || bundle.getBoolean("playSound")) {
                 Uri soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
