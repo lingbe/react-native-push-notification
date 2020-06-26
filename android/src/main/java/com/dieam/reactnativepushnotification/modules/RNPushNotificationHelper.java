@@ -22,10 +22,15 @@ import android.os.Bundle;
 import androidx.core.app.NotificationCompat;
 import android.util.Log;
 
+import android.database.sqlite.SQLiteOpenHelper;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.Cursor;
+
 import com.facebook.react.bridge.ReadableMap;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,6 +38,9 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+
 
 import com.dieam.reactnativepushnotification.helpers.ApplicationBadgeHelper;
 import static com.dieam.reactnativepushnotification.modules.RNPushNotification.LOG_TAG;
@@ -445,6 +453,8 @@ public class RNPushNotificationHelper {
             Notification info = notification.build();
             info.defaults |= Notification.DEFAULT_LIGHTS;
 
+            // Posts a notification to be shown in the status bar
+            // TIP: if some crash come after this will be capture and the notification will be displayed anyway
             if (bundle.containsKey("tag")) {
                 String tag = bundle.getString("tag");
                 notificationManager.notify(tag, notificationID, info);
@@ -466,6 +476,71 @@ public class RNPushNotificationHelper {
                 ApplicationBadgeHelper.INSTANCE.setApplicationIconBadgeNumber(context, Integer.parseInt(bundle.getString("badge")));
                 messageCountAll = Integer.parseInt(bundle.getString("badge"));
             }
+
+            // TIP: update last_message in contacts (in background like whatsapp)
+            // Connecting with SQLite parat
+
+            // Log.i(LOG_TAG, "SQLiteDatabase bundle: " + bundle);
+
+            // WatermelonDB says: On some systems there is some kind of lock on `/databases` folder so we get from parent folder
+            String dbPath = context.getDatabasePath("watermelon.db").toString().replace("/databases", "");
+            SQLiteDatabase db =  SQLiteDatabase.openOrCreateDatabase(dbPath, null);
+            // Log.i(LOG_TAG, "SQLiteDatabase db: " + db);
+
+            // Show all tables (rawQuery)
+            // Cursor c = db.rawQuery("SELECT name FROM sqlite_master WHERE type='table'", null);
+            // if (c.moveToFirst()) {
+            //     while ( !c.isAfterLast() ) {
+            //         // Toast.makeText(activityName.this, "Table Name=> "+c.getString(0), Toast.LENGTH_LONG).show();
+            //         Log.i(LOG_TAG, "SQLiteDatabase cursor tables: " + c.getString(0));
+            //         c.moveToNext();
+            //     }
+            // }
+
+            // TIP: update last_message if has payload and type: "message" 
+            String payloadType = "";
+            if(bundle.containsKey("payload")){
+                JSONObject payload = new JSONObject(bundle.getString("payload"));
+                if(payload.has("type"))
+                    payloadType = payload.getString("type");
+            }
+
+            if(payloadType.equals("message")){
+                // TIP: for "last_message_created" in push bundle "google.sent_time" I think can be used or "System.currentTimeMillis()"
+                Long tsLong = System.currentTimeMillis();
+                String tsString = tsLong.toString()+".0";
+                DateFormat dfMessage = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+                String createdAtFormat = dfMessage.format(new Date(tsLong));
+                if(bundle.containsKey("google.sent_time")){
+                    tsLong = bundle.getLong("google.sent_time");
+                    createdAtFormat = dfMessage.format(new Date(tsLong));
+                    tsString = tsLong.toString()+".0";
+                }
+
+                String contactId = "";
+                if(bundle.containsKey("payload")){
+                    JSONObject payload = new JSONObject(bundle.getString("payload"));
+                    JSONObject entity = payload.getJSONObject("entity");
+                    contactId = entity.getString("contact");
+                }
+
+                String lastMessage = "";
+                if(bundle.containsKey("message")){
+                    lastMessage = bundle.getString("message");
+                }
+
+                String msNotRead = "0";
+                int notId = Integer.parseInt(bundle.getString("id"));
+                ArrayList<String> messageList = messageMap.get(notId);
+                msNotRead = Integer.toString(messageList.size());
+
+                // TODO: createdAt should have this format: "2020-06-18T15:29:50.285Z" now have "2020-06-26T14:20:21"
+                String lastMessageJson = "{\"_id\":\"fromPushPluginId\",\"audio\":null,\"correct\":null,\"createdAt\":\"${ca}\",\"image\":null,\"marker\":{\"type\":\"markable\"},\"text\":\"${lm}\",\"user\":{\"_id\":\"${_id}\"}}".replace("${lm}", lastMessage).replace("${_id}", contactId).replace("${ca}", createdAtFormat);
+                String addMessageQuery = "UPDATE contacts SET messages_not_readed=${mnr}, last_message='${lm}', last_message_created=${lmc} WHERE _id='${_id}'".replace("${_id}", contactId).replace("${lm}", lastMessageJson).replace("${lmc}", tsString).replace("${mnr}", msNotRead);
+                // Log.i(LOG_TAG, "SQLiteDatabase addMessageQuery: " + addMessageQuery);
+                db.execSQL(addMessageQuery);
+            }
+
 
         } catch (Exception e) {
             Log.e(LOG_TAG, "failed to send push notification", e);
