@@ -28,6 +28,7 @@ phonegap) plugin: [phonegap-plugin-push](https://github.com/phonegap/phonegap-pl
 - Cancel notifications with the same "id" passed in "cancel" field
 - Inbox type notifications [cordova plugin docs](https://github.com/phonegap/phonegap-plugin-push/blob/master/docs/PAYLOAD.md#inbox-stacking)
 - Autoincrement badge number on notifications with field "incrementBadge" when app are in backgroud or closed (badge management was already supported)
+- Update SQLite in background on receive push notification, useful if your app uses SQLite for message storage
 
 ## Installation
 

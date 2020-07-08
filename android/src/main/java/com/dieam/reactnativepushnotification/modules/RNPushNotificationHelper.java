@@ -477,14 +477,12 @@ public class RNPushNotificationHelper {
                 messageCountAll = Integer.parseInt(bundle.getString("badge"));
             }
 
-            // TIP: update last_message in contacts (in background like whatsapp)
-            // Connecting with SQLite parat
-
-            // Log.i(LOG_TAG, "SQLiteDatabase bundle: " + bundle);
-
+            // TIPS: Connecting with SQLite parat
+            // Section of update last_message in contacts (in background like whatsapp)
             // WatermelonDB says: On some systems there is some kind of lock on `/databases` folder so we get from parent folder
             String dbPath = context.getDatabasePath("watermelon.db").toString().replace("/databases", "");
             SQLiteDatabase db =  SQLiteDatabase.openOrCreateDatabase(dbPath, null);
+            // Log.i(LOG_TAG, "SQLiteDatabase bundle: " + bundle);
             // Log.i(LOG_TAG, "SQLiteDatabase db: " + db);
 
             // Show all tables (rawQuery)
