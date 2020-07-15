@@ -477,12 +477,14 @@ public class RNPushNotificationHelper {
                 messageCountAll = Integer.parseInt(bundle.getString("badge"));
             }
 
-            // TIPS: Connecting with SQLite parat
-            // Section of update last_message in contacts (in background like whatsapp)
+            // TIP: update last_message in contacts (in background like whatsapp)
+            // Connecting with SQLite parat
+
+            // Log.i(LOG_TAG, "SQLiteDatabase bundle: " + bundle);
+
             // WatermelonDB says: On some systems there is some kind of lock on `/databases` folder so we get from parent folder
             String dbPath = context.getDatabasePath("watermelon.db").toString().replace("/databases", "");
             SQLiteDatabase db =  SQLiteDatabase.openOrCreateDatabase(dbPath, null);
-            // Log.i(LOG_TAG, "SQLiteDatabase bundle: " + bundle);
             // Log.i(LOG_TAG, "SQLiteDatabase db: " + db);
 
             // Show all tables (rawQuery)
@@ -516,10 +518,19 @@ public class RNPushNotificationHelper {
                 }
 
                 String contactId = "";
+                String rawText = "";
+                String messageId = "";
                 if(bundle.containsKey("payload")){
                     JSONObject payload = new JSONObject(bundle.getString("payload"));
                     JSONObject entity = payload.getJSONObject("entity");
                     contactId = entity.getString("contact");
+                    if(entity.has("attributes")){
+                        JSONObject attributes = entity.getJSONObject("attributes");
+                        messageId = attributes.getString("messageId");
+                        rawText = attributes.getString("rawText");
+                        // Log.i(LOG_TAG, "SQLiteDatabase cursor messageId: " + messageId);
+                        // Log.i(LOG_TAG, "SQLiteDatabase cursor rawText: " + rawText);
+                    }
                 }
 
                 String lastMessage = "";
@@ -534,9 +545,50 @@ public class RNPushNotificationHelper {
 
                 // TODO: createdAt should have this format: "2020-06-18T15:29:50.285Z" now have "2020-06-26T14:20:21"
                 String lastMessageJson = "{\"_id\":\"fromPushPluginId\",\"audio\":null,\"correct\":null,\"createdAt\":\"${ca}\",\"image\":null,\"marker\":{\"type\":\"markable\"},\"text\":\"${lm}\",\"user\":{\"_id\":\"${_id}\"}}".replace("${lm}", lastMessage).replace("${_id}", contactId).replace("${ca}", createdAtFormat);
-                String addMessageQuery = "UPDATE contacts SET messages_not_readed=${mnr}, last_message='${lm}', last_message_created=${lmc} WHERE _id='${_id}'".replace("${_id}", contactId).replace("${lm}", lastMessageJson).replace("${lmc}", tsString).replace("${mnr}", msNotRead);
-                // Log.i(LOG_TAG, "SQLiteDatabase addMessageQuery: " + addMessageQuery);
-                db.execSQL(addMessageQuery);
+                String addLastMessageQuery = "UPDATE contacts SET messages_not_readed=${mnr}, last_message='${lm}', last_message_created=${lmc} WHERE _id='${_id}'".replace("${_id}", contactId).replace("${lm}", lastMessageJson).replace("${lmc}", tsString).replace("${mnr}", msNotRead);
+                // Log.i(LOG_TAG, "SQLiteDatabase addLastMessageQuery: " + addLastMessageQuery);
+                db.execSQL(addLastMessageQuery);
+
+                // TIP: insert message in messages table
+                Cursor c = db.rawQuery("SELECT id FROM contacts WHERE _id='"+contactId+"'", null);
+                if (c.moveToFirst()) {
+                    String localContactId = c.getString(0);
+                    // Log.i(LOG_TAG, "SQLiteDatabase cursor contacts: " + localContactId);
+
+                    if(!messageId.equals("")){
+                        String text = rawText;
+                        String image = "";
+                        String audio = "";
+                        String correct = "";
+                        if(rawText.startsWith("formattedMessage=")){
+                            String textToJson = rawText.replace("formattedMessage=", "");
+                            JSONObject textParsed = new JSONObject(textToJson);
+                            String type = textParsed.getString("type");
+                            String source = "";
+                            String data = "";
+                            if(textParsed.has("source"))
+                                source = textParsed.getString("source");
+                            if(textParsed.has("data"))
+                                data = textParsed.getString("data");
+                            if (type.equals("image")) {
+                                text = "";
+                                image = source;
+                            } else if (type.equals("audio")) {
+                                text = "";
+                                audio = source;
+                            } else if (type.equals("correct")) {
+                                text = "";
+                                correct = data;
+                            }
+                        }
+                        String addMessageQuery = "INSERT INTO 'messages'('id','_changed','_status','_id','archive_id','audio','correct','created','image','marker','text','user','contact_id','created_at','updated_at')" +
+                                        "VALUES ('${mId}','','created','${mId}',NULL,'${urlAudio}','${dataCorrect}',${created},'${urlImage}','{\"type\":\"markable\"}','${rawText}','{\"_id\":\"${uId}\"}','${lcId}',${created},0.0)"
+                                        .replace("${mId}", messageId).replace("${uId}", contactId).replace("${created}", tsString).replace("${lcId}", localContactId).replace("${rawText}", text).replace("${urlAudio}", audio).replace("${dataCorrect}", correct).replace("${urlImage}", image);
+                        db.execSQL(addMessageQuery);
+                    }
+                }
+
+
             }
 
 
