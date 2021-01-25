@@ -477,7 +477,7 @@ public class RNPushNotificationHelper {
                 messageCountAll = Integer.parseInt(bundle.getString("badge"));
             }
 
-            // TIP: update last_message in contacts (in background like whatsapp)
+            /*/ TIP: update last_message in contacts (in background like whatsapp)
             // Connecting with SQLite parat
 
             // Log.i(LOG_TAG, "SQLiteDatabase bundle: " + bundle);
@@ -589,7 +589,7 @@ public class RNPushNotificationHelper {
                 }
 
 
-            }
+            }*/
 
 
         } catch (Exception e) {
