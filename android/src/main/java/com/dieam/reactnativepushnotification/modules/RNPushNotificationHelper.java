@@ -453,7 +453,7 @@ public class RNPushNotificationHelper {
             Notification info = notification.build();
             info.defaults |= Notification.DEFAULT_LIGHTS;
 
-            // Posts a notification to be shown in the status bar
+            //## Put a notification to be shown in the status bar
             // TIP: if some crash come after this will be capture and the notification will be displayed anyway
             if (bundle.containsKey("tag")) {
                 String tag = bundle.getString("tag");
@@ -468,7 +468,7 @@ public class RNPushNotificationHelper {
             // late by many minutes.
             this.scheduleNextNotificationIfRepeating(bundle);
 
-            // TIPS: Section of "Increment Badge"
+            //## Section of: "Increment Badge"
             if(bundle.containsKey("incrementBadge") && bundle.getString("incrementBadge").equals("true")){
                 messageCountAll ++;
                 ApplicationBadgeHelper.INSTANCE.setApplicationIconBadgeNumber(context, messageCountAll);
@@ -477,8 +477,8 @@ public class RNPushNotificationHelper {
                 messageCountAll = Integer.parseInt(bundle.getString("badge"));
             }
 
-            // TIP: update last_message in contacts (in background like whatsapp)
-            // Connecting with SQLite parat
+            //## Section of: update last_message in contacts (in background like whatsapp)
+            // TIP: Connecting with SQLite
 
             // Log.i(LOG_TAG, "SQLiteDatabase bundle: " + bundle);
 
@@ -543,11 +543,12 @@ public class RNPushNotificationHelper {
                 ArrayList<String> messageList = messageMap.get(notId);
                 msNotRead = Integer.toString(messageList.size());
 
-                // TODO: createdAt should have this format: "2020-06-18T15:29:50.285Z" now have "2020-06-26T14:20:21"
-                String lastMessageJson = "{\"_id\":\"fromPushPluginId\",\"audio\":null,\"correct\":null,\"createdAt\":\"${ca}\",\"image\":null,\"marker\":{\"type\":\"markable\"},\"text\":\"${lm}\",\"user\":{\"_id\":\"${_id}\"}}".replace("${lm}", lastMessage).replace("${_id}", contactId).replace("${ca}", createdAtFormat);
-                String addLastMessageQuery = "UPDATE contacts SET messages_not_readed=${mnr}, last_message='${lm}', last_message_created=${lmc} WHERE _id='${_id}'".replace("${_id}", contactId).replace("${lm}", lastMessageJson).replace("${lmc}", tsString).replace("${mnr}", msNotRead);
+                // TEMP Disabled addLastMessageQuery
+                // createdAt should have this format: "2020-06-18T15:29:50.285Z" now have "2020-06-26T14:20:21"
+                // String lastMessageJson = "{\"_id\":\"fromPushPluginId\",\"audio\":null,\"correct\":null,\"createdAt\":\"${ca}\",\"image\":null,\"marker\":{\"type\":\"markable\"},\"text\":\"${lm}\",\"user\":{\"_id\":\"${_id}\"}}".replace("${lm}", lastMessage).replace("${_id}", contactId).replace("${ca}", createdAtFormat);
+                // String addLastMessageQuery = "UPDATE contacts SET messages_not_readed=${mnr}, last_message='${lm}', last_message_created=${lmc} WHERE _id='${_id}'".replace("${_id}", contactId).replace("${lm}", lastMessageJson).replace("${lmc}", tsString).replace("${mnr}", msNotRead);
                 // Log.i(LOG_TAG, "SQLiteDatabase addLastMessageQuery: " + addLastMessageQuery);
-                db.execSQL(addLastMessageQuery);
+                // db.execSQL(addLastMessageQuery);
 
                 // TIP: insert message in messages table
                 Cursor c = db.rawQuery("SELECT id FROM contacts WHERE _id='"+contactId+"'", null);
@@ -581,12 +582,14 @@ public class RNPushNotificationHelper {
                                 correct = data;
                             }
                         }
+                        // TODO add "audio duration"
                         String addMessageQuery = "INSERT INTO 'messages'('id','_changed','_status','_id','archive_id','audio','correct','created','image','marker','text','user','contact_id','created_at','updated_at')" +
                                         "VALUES ('${mId}','','created','${mId}',NULL,'${urlAudio}','${dataCorrect}',${created},'${urlImage}','{\"type\":\"markable\"}','${rawText}','{\"_id\":\"${uId}\"}','${lcId}',${created},0.0)"
                                         .replace("${mId}", messageId).replace("${uId}", contactId).replace("${created}", tsString).replace("${lcId}", localContactId).replace("${rawText}", text).replace("${urlAudio}", audio).replace("${dataCorrect}", correct).replace("${urlImage}", image);
                         db.execSQL(addMessageQuery);
                     }
                 }
+                // End of: update last_message in contacts (in background like whatsapp)
 
 
             }
